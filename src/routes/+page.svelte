@@ -175,7 +175,7 @@
     window.addEventListener("resize", handleResize);
     document.addEventListener("visibilitychange", handleVisibilityChange);
     document.addEventListener("mousemove", handleMouseMove);
-    document.body.addEventListener("click", toggleBrightness);
+    document.body.addEventListener("dblclick", toggleBrightness);
   });
 
   onDestroy(() => {
