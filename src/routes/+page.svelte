@@ -6,6 +6,7 @@
   let ticker: string | null = null;
   let observer: MutationObserver;
   let wakeLock: any = null;
+  let timeoutIds: number[] = [];
 
   function getTickerFromUrl() {
     // URL에서 ticker 파라미터 추출 (default: KRW-BTC)
@@ -44,15 +45,29 @@
         const response = await fetch(tickerUrl);
         if (response.ok) {
           const data = await response.json();
-          console.debug("Ticker data:", data);
+          data.forEach(
+            (item: {
+              market: string | null;
+              timestamp: string | number | Date;
+              trade_price: any;
+              signed_change_rate: number;
+            }) => {
+              if (item.market === ticker) {
+                const date = new Date(item.timestamp);
+                const price = item.trade_price;
+                const change = item.signed_change_rate * 100;
 
-          const price = data[0].trade_price;
-          priceElement.textContent = price.toLocaleString("ko-KR", { style: "currency", currency: "KRW" });
+                const formattedDate = new Date(date).toISOString();
+                const formattedPrice = price.toLocaleString("ko-KR", { style: "currency", currency: "KRW" });
+                const formattedChange = change > 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`;
 
-          const change = data[0].signed_change_rate * 100;
-          changeElement.textContent = change > 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`;
-
-          changeElement.style.color = change > 0 ? "lightgreen" : change < 0 ? "lightcoral" : "white";
+                console.debug(item.market, formattedDate, formattedPrice, formattedChange);
+                priceElement.textContent = price.toLocaleString("ko-KR", { style: "currency", currency: "KRW" });
+                changeElement.textContent = change > 0 ? `+${change.toFixed(2)}%` : `${change.toFixed(2)}%`;
+                changeElement.style.color = change > 0 ? "lightgreen" : change < 0 ? "lightcoral" : "white";
+              }
+            },
+          );
         } else {
           console.error("Ticker data not found:", tickerUrl);
         }
@@ -60,7 +75,8 @@
         console.error("Error fetching ticker data:", error);
       }
     }
-    setTimeout(fetchPrice, PRICE_FETCH_INTERVAL);
+    const timeoutId = setTimeout(fetchPrice, PRICE_FETCH_INTERVAL);
+    timeoutIds.push(timeoutId);
   }
 
   function autoScaleFontSize(element: Element) {
@@ -96,7 +112,8 @@
         `translate(${randomDirection(MOVE_PIXEL)}px, ${randomDirection(MOVE_PIXEL)}px)`;
       console.debug((moveElement as HTMLElement).style.transform);
     }
-    setTimeout(preventBurnIn, PREVENT_BURN_IN_INTERVAL);
+    const timeoutId = setTimeout(preventBurnIn, PREVENT_BURN_IN_INTERVAL);
+    timeoutIds.push(timeoutId);
   }
 
   async function enableWakeLock() {
@@ -181,16 +198,25 @@
   onDestroy(() => {
     if (typeof window !== "undefined") {
       window.removeEventListener("resize", handleResize); // 리사이즈 이벤트 핸들러 제거
+      console.debug("Window event listener removed");
     }
     if (wakeLock) {
       releaseWakeLock(); // Wake Lock 해제
+      console.debug("Wake Lock released");
     }
     if (typeof document !== "undefined") {
       document.removeEventListener("visibilitychange", handleVisibilityChange); // 페이지의 가시성 변경 이벤트 핸들러 제거
       document.body.removeEventListener("click", toggleBrightness); // 터치로 화면 밝기 토글 이벤트 핸들러 제거
+      console.debug("Document event listener removed");
     }
     if (observer) {
       observer.disconnect();
+      console.debug("MutationObserver disconnected");
+    }
+    if (timeoutIds.length > 0) {
+      timeoutIds.forEach(clearTimeout);
+      timeoutIds = [];
+      console.debug("Timeout cleared");
     }
   });
 </script>
