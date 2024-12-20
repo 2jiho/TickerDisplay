@@ -1,34 +1,32 @@
-<script>
-  import { onMount } from 'svelte'
-  import { pwaInfo } from 'virtual:pwa-info'
-  
+<script lang="ts">
+  import { onMount } from "svelte";
+  import { pwaInfo } from "virtual:pwa-info";
+
   onMount(async () => {
     if (pwaInfo) {
-      const { registerSW } = await import('virtual:pwa-register')
+      const { registerSW } = await import("virtual:pwa-register");
       registerSW({
         immediate: true,
-        onRegistered(r) {
+        onRegistered(r: ServiceWorkerRegistration) {
           // uncomment following code if you want check for updates
           // r && setInterval(() => {
           //    console.log('Checking for sw update')
           //    r.update()
           // }, 20000 /* 20s for testing purposes */)
-          console.log(`SW Registered: ${r}`)
+          console.log(`SW Registered: ${r}`);
         },
-        onRegisterError(error) {
-          console.log('SW registration error', error)
-        }
-      })
+        onRegisterError(error: Error) {
+          console.log("SW registration error", error);
+        },
+      });
     }
-  })
-  
-  $: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : ''
+  });
+
+  $: webManifest = pwaInfo ? pwaInfo.webManifest.linkTag : "";
 </script>
 
 <svelte:head>
-    {@html webManifest}
+  {@html webManifest}
 </svelte:head>
 
-<main>
-  <slot />
-</main>
+<slot />
