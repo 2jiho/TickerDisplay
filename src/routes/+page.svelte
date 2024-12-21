@@ -8,6 +8,7 @@
 
   let markets: string = "KRW-BTC";
   let marketsData: {}[] = [];
+  let containerElement: HTMLDivElement;
 
   function getMarketsFromUrl(): string | null {
     // URL에서 markets 파라미터 추출 (default: KRW-BTC)
@@ -16,33 +17,80 @@
     return params.get("markets");
   }
 
+  function containerAutoResize() {
+    if (!containerElement) return;
+    const element = containerElement;
+    const parent = element.parentElement;
+    if (parent) {
+      const parentWidth = parent.clientWidth;
+      const parentHeight = parent.clientHeight;
+      const elementWidth = element.clientWidth;
+      const elementHeight = element.clientHeight;
+
+      const scaleWidth = parentWidth / elementWidth;
+      const scaleHeight = parentHeight / elementHeight;
+      const scale = Math.min(scaleWidth, scaleHeight);
+      const zoom = window.devicePixelRatio;
+      element.style.transform = `scale(${scale * zoom})`;
+    }
+  }
+
+  function containerGriding() {
+    if (!containerElement) return;
+    const element = containerElement;
+    const { children } = element;
+    const count = children.length;
+    if (count === 0) return;
+
+    const w = children[0].clientWidth;
+    const h = children[0].clientHeight;
+
+    const parent = element.parentElement;
+    if (!parent) return;
+    const parentRatio = parent.clientWidth / parent.clientHeight;
+    const gridGap = 30;
+
+    const width = w + gridGap * 2;
+    const height = h + gridGap * 2;
+    // 최소 면적 그리드
+    const sqrtArea = Math.sqrt(count * width * height * parentRatio);
+    const cols = sqrtArea / width;
+    element.style.gridTemplateColumns = `repeat(${Math.floor(cols)}, 1fr)`;
+    element.style.gap = `${gridGap}px`;
+    element.style.padding = `${gridGap}px`;
+  }
+
+  function apiUpdate(data: {}[]) {
+    marketsData = data;
+    setTimeout(containerGriding, 0);
+    setTimeout(containerAutoResize, 0);
+  }
+
   onMount(() => {
     markets = getMarketsFromUrl() || markets;
   });
 </script>
 
-<API {markets} apiUpdate={(data: {}[]) => (marketsData = data)} />
+<API {markets} {apiUpdate} />
 <WakeLock />
 <PreventBurnIn />
 <Brightness />
 <main>
-  {#if marketsData.length > 0}
+  <div bind:this={containerElement} class="container">
     {#each marketsData as tickerData}
       <Ticker {tickerData} />
     {/each}
-  {:else}
-    <div>Loading...</div>
-  {/if}
+  </div>
 </main>
 
 <style>
   :global(body) {
     margin: 0;
-    background-color: #000;
+    background-color: #000000;
     overflow: hidden; /* 스크롤바 제거 */
     user-select: none; /* 텍스트 선택 방지 */
-    width: 100vw; /* 부모 요소의 너비를 설정 */
-    height: 100vh; /* 부모 요소의 높이를 설정 */
+    width: 100vw;
+    height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -54,5 +102,8 @@
     align-items: center;
     width: 80%;
     height: 80%;
+  }
+  .container {
+    display: grid;
   }
 </style>
