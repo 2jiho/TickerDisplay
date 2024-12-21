@@ -1,47 +1,33 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import API from "./API.svelte";
-  import Ticker from "./Ticker.svelte";
-  import WakeLock from "./WakeLock.svelte";
-  import PreventBurnIn from "./PreventBurnIn.svelte";
+  import API from "../components/API.svelte";
+  import Ticker from "../components/Ticker.svelte";
+  import WakeLock from "../components/WakeLock.svelte";
+  import PreventBurnIn from "../components/PreventBurnIn.svelte";
+  import Brightness from "../components/Brightness.svelte";
 
   let markets: string = "KRW-BTC";
-  let data: {}[] = [];
+  let marketsData: {}[] = [];
 
-  function getMarketsFromUrl() {
+  function getMarketsFromUrl(): string | null {
     // URL에서 markets 파라미터 추출 (default: KRW-BTC)
     const url: URL = new URL(window.location.href);
     const params: URLSearchParams = new URLSearchParams(url.search);
-    markets = params.get("markets") || markets;
-    console.debug("markets:", markets);
-  }
-
-  function toggleBrightness() {
-    // 화면 밝기 50% 토글
-    const bodyElement = document.body;
-    bodyElement.style.filter = bodyElement.style.filter.includes("brightness") ? "" : "brightness(50%)";
-  }
-
-  function apiUpdate(newData: any) {
-    data = newData;
+    return params.get("markets");
   }
 
   onMount(() => {
-    getMarketsFromUrl();
-    document.body.addEventListener("dblclick", toggleBrightness);
-
-    return () => {
-      document.body.removeEventListener("dblclick", toggleBrightness);
-    };
+    markets = getMarketsFromUrl() || markets;
   });
 </script>
 
-<API {markets} {apiUpdate} />
+<API {markets} apiUpdate={(data: {}[]) => (marketsData = data)} />
 <WakeLock />
 <PreventBurnIn />
+<Brightness />
 <main>
-  {#if data.length > 0}
-    {#each data as tickerData}
+  {#if marketsData.length > 0}
+    {#each marketsData as tickerData}
       <Ticker {tickerData} />
     {/each}
   {:else}
@@ -60,7 +46,6 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: Arial, sans-serif;
     color: #ffffff;
   }
   main {
