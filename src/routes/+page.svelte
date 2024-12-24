@@ -30,7 +30,7 @@
       const scaleWidth = parentWidth / elementWidth;
       const scaleHeight = parentHeight / elementHeight;
       const scale = Math.min(scaleWidth, scaleHeight);
-      const zoom = window.devicePixelRatio;
+      const zoom = window.visualViewport?.scale || 1;
       element.style.transform = `scale(${scale * zoom})`;
     }
   }
@@ -62,12 +62,18 @@
 
   function apiUpdate(data: {}[]) {
     marketsData = data;
-    setTimeout(containerGriding, 0);
-    setTimeout(containerAutoResize, 0);
+    setTimeout(handleResize, 0);
+  }
+
+  function handleResize() {
+    containerGriding();
+    containerAutoResize();
   }
 
   onMount(() => {
     markets = getMarketsFromUrl() || markets;
+    window.addEventListener("resize", handleResize);
+    window.visualViewport?.addEventListener("resize", handleResize);
   });
 </script>
 
